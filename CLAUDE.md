@@ -2,79 +2,117 @@
 
 ## Repository Overview
 
-This is the `koolaid1927/index` repository. It is currently in its initial setup phase with no application code yet. This document establishes conventions and guidelines for AI assistants contributing to this project.
+**Become Who You Are** — a philosophical self-improvement and accountability tracker built as a single-page HTML/CSS/JS application. Inspired by Aristotle and Nietzsche, it gamifies personal growth across five life domains with an XP/leveling system, streak tracking, emotional check-ins, grounding tools, and journaling.
 
 ## Project Structure
 
 ```
 index/
 ├── CLAUDE.md          # This file — AI assistant guidelines
-└── .git/              # Git repository
+└── index.html         # Entire application (single-file SPA)
 ```
 
-> **Note:** Update this section as the project grows to reflect the actual directory layout, frameworks, and modules in use.
+This is a **zero-dependency, single-file app**. All HTML, CSS, and JavaScript live in `index.html`. There is no build step, no bundler, no framework, and no package manager.
+
+## Tech Stack
+
+- **HTML5** — semantic markup, mobile-optimized viewport
+- **CSS3** — custom properties, animations, gradients, responsive layout
+- **Vanilla JavaScript** — no frameworks or libraries
+- **Google Fonts** — EB Garamond (serif) and IBM Plex Mono (monospace), loaded via CDN
+- **localStorage** — all user data persisted client-side under the key `philo_practice_v1`
 
 ## Development Setup
 
-### Prerequisites
-
-- Git
-
-### Getting Started
+No build tools required. Open `index.html` in a browser, or serve it with any static file server:
 
 ```sh
-git clone <repository-url>
-cd index
+# Option A: open directly
+open index.html
+
+# Option B: local server (Python)
+python3 -m http.server 8000
+
+# Option C: local server (Node)
+npx serve .
 ```
 
-> **Note:** Add language runtime, package manager, and dependency installation instructions here once the tech stack is chosen.
+## Application Architecture
 
-## Common Commands
+### State Management
 
-> **Note:** Fill in these sections as build tooling is added to the project.
+A single global state object `S` holds all UI and session state. The `render()` function re-renders the entire `#app` container on every state change (immediate-mode UI pattern).
 
-### Build
+Persistent data lives in `S.data` and is saved to localStorage via `sv()`. The app attempts migration from several older storage keys on load.
 
-```sh
-# TBD — add build command
-```
+### Key Data Structures
 
-### Test
+- **`S.data.entries[]`** — Daily practice entries with responses, reflections, steps, gratitude
+- **`S.data.checkins[]`** — Emotional check-in logs (emotion, trigger, body sensation, story)
+- **`S.data.wins[]`** — Boundary win journal entries
+- **`S.data.xp`** — Total experience points
+- **`S.data.ua[]`** — Unlocked achievement IDs
 
-```sh
-# TBD — add test command
-```
+### Five Domains (scored 1-3 per prompt)
 
-### Lint / Format
+| Domain | ID | Prompts |
+|---|---|---|
+| Emotional Regulation | `regulation` | 4 |
+| Relationships & Boundaries | `boundaries` | 4 |
+| Discipline & Daily Habits | `discipline` | 4 |
+| Fitness & Body | `fitness` | 3 + step tracker |
+| Identity & Self-Worth | `identity` | 4 |
 
-```sh
-# TBD — add lint and format commands
-```
+### Tabs
+
+1. **Practice** (`checkin`) — Daily domain scoring, reflections, gratitude, save for XP
+2. **Tools** (`tools`) — Emotional check-in, grounding exercises (with box breathing), trigger log, boundary wins
+3. **Trophies** (`achievements`) — Unlockable achievements based on streaks, entries, and milestones
+4. **Wisdom** (`principles`) — Philosophical principles from Aristotle and Nietzsche
+5. **Journey** (`journey`) — Historical view of all past entries with SVG ring charts
+
+### XP & Leveling
+
+10 levels from "Unexamined Life" (0 XP) to "Ubermensch" (5500 XP). XP earned from daily saves, prompt scores, reflections, step goals, challenges, achievements, and emotional check-ins.
+
+### Key Functions
+
+| Function | Purpose |
+|---|---|
+| `render()` | Full UI re-render from state |
+| `saveEntry()` | Save daily practice, calculate XP, check achievements |
+| `init()` | Load data, restore today's entry if exists, initial render |
+| `gs()` | Calculate current streak |
+| `gl(xp)` / `nl(xp)` | Get current / next level for XP value |
+| `gc()` / `gq()` | Get daily challenge / quote (deterministic by date) |
+| `ring()` | Generate SVG ring chart for domain scores |
+| `saveCheckin()` | Log emotional check-in |
+| `saveWin()` | Log boundary win |
+| `startBreath()` | Start/stop box breathing timer |
+| `exportData()` / `importData()` | JSON export/import of all user data |
+
+## Code Conventions
+
+- **Minified variable names** — The codebase uses short variable/function names (e.g., `sv` for save, `td` for today, `gl` for get-level). Maintain this style when editing existing code.
+- **CSS class names** are also abbreviated (e.g., `.ctn` for container, `.hdr` for header, `.lvb` for level box). Follow existing naming patterns.
+- **CSS custom properties** defined in `:root` — use `var(--g)` for gold, `var(--gl)` for gold-light, `var(--t)` for text, `var(--bg)` for background, etc.
+- **String-based HTML rendering** — The `render()` function builds HTML via string concatenation. Follow this pattern rather than introducing DOM manipulation or templating.
+- **No semicolons** are sometimes omitted; be consistent with surrounding code.
+- **User input sanitization** — `.replace(/</g, "&lt;")` is used when rendering user text. Always sanitize user content when inserting into HTML strings.
 
 ## Git Workflow
 
-- **Default branch:** `main` (to be created with the first commit)
 - Write clear, descriptive commit messages summarizing the "why" not just the "what"
 - Keep commits focused — one logical change per commit
 - Push feature work to feature branches; open pull requests for review
 
-## Code Conventions
-
-> **Note:** Define conventions here once the tech stack and coding standards are established. Consider documenting:
->
-> - Language and framework versions
-> - Naming conventions (files, variables, functions, classes)
-> - Formatting and linting rules
-> - Import ordering
-> - Error handling patterns
-> - Testing expectations (unit, integration, e2e)
-
 ## Guidelines for AI Assistants
 
-1. **Read before writing.** Always read existing files before modifying them. Understand context before proposing changes.
-2. **Keep it simple.** Make only the changes that are requested or clearly necessary. Avoid over-engineering, unnecessary abstractions, or speculative features.
-3. **Don't add noise.** Avoid adding comments, docstrings, or type annotations to code you didn't change, unless explicitly asked.
-4. **Respect existing patterns.** Follow the conventions and style already present in the codebase rather than introducing new ones.
-5. **Security first.** Never introduce vulnerabilities (injection, XSS, exposed secrets, etc.). Never commit `.env` files or credentials.
-6. **Test your changes.** Run the test suite after making changes. Don't mark work as complete if tests are failing.
-7. **One concern per commit.** Keep commits atomic and focused on a single logical change.
+1. **Read before writing.** Always read `index.html` before modifying it. Understand the render cycle and state model.
+2. **Keep it single-file.** Do not split the app into multiple files unless explicitly asked. The single-file design is intentional.
+3. **Match the style.** Use short variable names, abbreviated CSS classes, and string-concatenation rendering consistent with the existing code.
+4. **Sanitize user input.** Any user-provided text rendered into HTML must be escaped to prevent XSS.
+5. **Preserve localStorage compatibility.** Don't change the `philo_practice_v1` storage key or break the data schema without migration logic.
+6. **No frameworks.** Don't introduce React, Vue, jQuery, or any library. This is vanilla JS by design.
+7. **Test in browser.** The only way to test this app is to open it in a browser and interact with it. There is no test suite.
+8. **Keep it simple.** Avoid over-engineering. This is a personal tool — favor directness over abstraction.
